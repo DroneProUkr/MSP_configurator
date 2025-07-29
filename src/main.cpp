@@ -27,8 +27,8 @@ int main() {
         int msp_override_channel = drone.findMSPOverrideChannel();
         
         if (msp_override_channel == -1) {
-            std::cerr << "Could not find MSP Override channel" << std::endl;
-            return 1;
+            std::cout << "No MSP Override channel found, setting AUX4 (channel 8) as default" << std::endl;
+            msp_override_channel = 7; // AUX4 = RC channel 8 (1-indexed), so 7 (0-indexed)
         }
         
         // Save the channel configuration
@@ -39,23 +39,31 @@ int main() {
         
         // Step 1.5: Check and set MSP_OVERRIDE mode
         std::cout << "\n--- Step 1.5: Checking MSP_OVERRIDE Mode Configuration ---" << std::endl;
+        bool used_cli_method = false;
         if (!drone.checkAndSetMSPOverrideMode()) {
-            std::cerr << "Failed to check/set MSP_OVERRIDE mode" << std::endl;
-            return 1;
+            std::cout << "MSP commands failed to set AUX configuration, trying CLI method..." << std::endl;
+            // Use combined function to set both AUX and parameters in one CLI session
+            if (!drone.setAUXAndParametersViaCLI()) {
+                std::cerr << "Failed to set AUX and parameters via CLI" << std::endl;
+                return 1;
+            }
+            used_cli_method = true;
+        } else {
+            // If MSP worked for AUX, still need to set parameters via CLI
+            std::cout << "\n--- Step 2: Setting Parameters via CLI ---" << std::endl;
+            if (!drone.setParametersViaCLI()) {
+                std::cerr << "Failed to set parameters via CLI" << std::endl;
+                return 1;
+            }
         }
         
-        // Step 2: Verify and set parameters
-        std::cout << "\n--- Step 2: Verifying Parameters ---" << std::endl;
-        if (!drone.verifyParameters()) {
-            std::cerr << "Parameter verification/setting failed" << std::endl;
-            return 1;
-        }
-        
-        // Step 3: Save settings to drone
-        std::cout << "\n--- Step 3: Saving Settings ---" << std::endl;
-        if (!drone.saveSettings()) {
-            std::cerr << "Failed to save settings to drone" << std::endl;
-            return 1;
+        // Step 3: Save settings to drone (if not already saved by CLI)
+        if (!used_cli_method) {
+            std::cout << "\n--- Step 3: Saving Settings ---" << std::endl;
+            if (!drone.saveSettings()) {
+                std::cerr << "Failed to save settings to drone" << std::endl;
+                return 1;
+            }
         }
         
         std::cout << "\n=== Configuration Complete ===" << std::endl;

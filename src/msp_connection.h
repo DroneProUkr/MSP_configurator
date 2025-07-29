@@ -24,11 +24,17 @@ public:
     bool receiveMessage(MSPMessage& msg, int timeout_ms = TIMEOUT_MS);
     bool sendAndReceive(const MSPMessage& request, MSPMessage& response, int timeout_ms = TIMEOUT_MS);
     
+    // Send raw bytes
+    bool sendBytes(const uint8_t* data, size_t length);
+    
     // Test method to check if any data is available
     int testReadByte(int timeout_ms = 1000);
     
     // Test different baud rates
     bool testBaudRate(int baud_rate);
+    
+    // Read available bytes (non-blocking)
+    bool readAvailableBytes(std::vector<uint8_t>& buffer, int timeout_ms = 1000);
     
 private:
     bool configureSerial();

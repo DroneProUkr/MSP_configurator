@@ -155,6 +155,22 @@ bool MSPConnection::sendMessage(const MSPMessage& msg) {
     return true;
 }
 
+bool MSPConnection::sendBytes(const uint8_t* data, size_t length) {
+    if (!connected) {
+        std::cout << "DEBUG: sendBytes called but not connected" << std::endl;
+        return false;
+    }
+    
+    ssize_t bytes_written = write(serial_fd, data, length);
+    if (bytes_written != static_cast<ssize_t>(length)) {
+        std::cout << "DEBUG: sendBytes failed - wrote " << bytes_written << " of " << length << " bytes" << std::endl;
+        return false;
+    }
+    
+    std::cout << "DEBUG: sendBytes succeeded - wrote " << bytes_written << " bytes" << std::endl;
+    return true;
+}
+
 int MSPConnection::readBytes(uint8_t* buffer, int max_bytes, int timeout_ms) {
     fd_set read_fds;
     struct timeval timeout;
@@ -367,4 +383,51 @@ bool MSPConnection::testBaudRate(int baud_rate) {
         std::cout << "DEBUG: No data at baud rate " << baud_rate << std::endl;
         return false;
     }
+}
+
+bool MSPConnection::readAvailableBytes(std::vector<uint8_t>& buffer, int timeout_ms) {
+    if (!connected) {
+        std::cout << "DEBUG: readAvailableBytes called but not connected" << std::endl;
+        return false;
+    }
+    
+    buffer.clear();
+    
+    auto start_time = std::chrono::steady_clock::now();
+    uint8_t byte;
+    bool got_newline = false;
+    
+    while (true) {
+        int bytes_read = readBytes(&byte, 1, 50); // Use shorter timeout for individual byte reads
+        if (bytes_read <= 0) {
+            auto now = std::chrono::steady_clock::now();
+            auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - start_time);
+            if (elapsed.count() > timeout_ms) {
+                break; // Timeout for overall read operation
+            }
+            // If we already have some data and got a newline, we're done
+            if (!buffer.empty() && got_newline) {
+                break;
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(10)); // Short sleep to avoid busy waiting
+            continue;
+        }
+        
+        buffer.push_back(byte);
+        
+        // Track if we got a newline
+        if (byte == '\n') {
+            got_newline = true;
+        }
+        
+        // If we get a '#' prompt after a newline, we're done
+        if (got_newline && byte == '#') {
+            break;
+        }
+        
+        // Reset start_time to keep reading as long as new data arrives
+        start_time = std::chrono::steady_clock::now(); 
+    }
+    
+    return !buffer.empty();
 }

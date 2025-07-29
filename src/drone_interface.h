@@ -41,6 +41,9 @@ public:
     bool setParameters(const DroneParameters& params);
     bool saveSettings();
     bool checkAndSetMSPOverrideMode();
+    bool setAUXConfigurationViaCLI();
+    bool setParametersViaCLI();
+    bool setAUXAndParametersViaCLI();  // New combined method
     bool checkFirmwareVersion();
     
     // Logging
