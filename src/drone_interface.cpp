@@ -767,7 +767,7 @@ bool DroneInterface::setAUXConfigurationViaCLI() {
     
     // Set AUX4 to MSP_OVERRIDE mode
     // Format: aux [index] [mode] [channel] [range_start] [range_end] [logic] [linked_to]
-    std::string set_aux_cmd = "aux " + std::to_string(target_index) + " 50 3 1000 2000 0 0";
+    std::string set_aux_cmd = "aux " + std::to_string(target_index) + " 50 3 1650 2100 0 0";
     logStatus("CLI: Sending '" + set_aux_cmd + "'");
     std::string set_aux_cmd_with_cr = set_aux_cmd + "\r";
     if (!connection.sendBytes(reinterpret_cast<const uint8_t*>(set_aux_cmd_with_cr.c_str()), set_aux_cmd_with_cr.length())) {
@@ -1175,7 +1175,7 @@ bool DroneInterface::setAUXAndParametersViaCLI() {
         int target_index = (free_index >= 0) ? free_index : 1;  // Use index 1 as fallback instead of 3
         logStatus("CLI: Using aux index " + std::to_string(target_index) + " for MSP_OVERRIDE");
         
-        std::string set_aux_cmd = "aux " + std::to_string(target_index) + " 50 3 1000 2000 0 0";
+        std::string set_aux_cmd = "aux " + std::to_string(target_index) + " 50 3 1650 2100 0 0";
         if (!sendCLICommand(set_aux_cmd, set_aux_cmd)) {
             logError("Failed to set AUX configuration");
             exitCLI();
